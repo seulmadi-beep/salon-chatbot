@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assistant Batista Coiffure</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --rose: #C4956A;
+    --rose-light: #F5EDE3;
+    --dark: #1A1A1A;
+    --mid: #6B6B6B;
+    --white: #FDFAF7;
+    --bubble-user: #1A1A1A;
+    --bubble-bot: #FFFFFF;
+  }
+
+  body {
+    background: var(--white);
+    font-family: 'Inter', sans-serif;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chat-wrapper {
+    width: 100%;
+    max-width: 420px;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    position: relative;
+  }
+
+  /* Header */
+  .header {
+    background: var(--dark);
+    padding: 20px 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    background: var(--rose);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .header-info h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: #FFFFFF;
+    letter-spacing: 0.02em;
+  }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    background: #4CAF50;
+    border-radius: 50%;
+  }
+
+  .status span {
+    font-size: 11px;
+    color: #999;
+    font-weight: 300;
+  }
+
+  /* Messages */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 0; }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 82%;
+    animation: fadeUp 0.25s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.bot { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+
+  .bubble {
+    padding: 11px 15px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .msg.bot .bubble {
+    background: var(--bubble-bot);
+    color: var(--dark);
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .msg.user .bubble {
+    background: var(--bubble-user);
+    color: #FFFFFF;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg-time {
+    font-size: 10px;
+    color: #bbb;
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+
+  .msg.user .msg-time { text-align: right; }
+
+  /* Quick replies */
+  .quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 0 16px 8px;
+    flex-shrink: 0;
+  }
+
+  .qr-btn {
+    background: transparent;
+    border: 1.5px solid var(--rose);
+    color: var(--rose);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+
+  .qr-btn:hover, .qr-btn:active {
+    background: var(--rose);
+    color: white;
+  }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 15px;
+    background: white;
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    align-self: flex-start;
+    width: fit-content;
+  }
+
+  .typing span {
+    width: 6px;
+    height: 6px;
+    background: var(--rose);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* Input */
+  .input-area {
+    padding: 12px 16px 20px;
+    background: var(--white);
+    border-top: 1px solid #F0EAE3;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  .input-box {
+    flex: 1;
+    background: white;
+    border: 1.5px solid #E8DDD5;
+    border-radius: 22px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--dark);
+    outline: none;
+    resize: none;
+    max-height: 100px;
+    line-height: 1.4;
+    transition: border-color 0.2s;
+  }
+
+  .input-box:focus { border-color: var(--rose); }
+  .input-box::placeholder { color: #bbb; }
+
+  .send-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--rose);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .send-btn:hover { background: #B0845A; }
+
+  .send-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: white;
+  }
+
+  /* Divider */
+  .day-divider {
+    text-align: center;
+    font-size: 11px;
+    color: #bbb;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin: 4px 0;
+  }
+
+  /* Powered by */
+  .powered {
+    text-align: center;
+    font-size: 10px;
+    color: #ccc;
+    padding-bottom: 4px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- KEY SCREEN -->
+<div id="keyScreen" style="display:none; position:fixed; inset:0; background:#1A1A1A; z-index:100; flex-direction:column; align-items:center; justify-content:center; padding:32px; gap:20px;">
+  <div style="font-size:40px;">✂️</div>
+  <div style="font-family:'Cormorant Garamond',serif; font-size:24px; color:white; text-align:center;">Batista Coiffure<br><span style="font-size:14px; font-family:Inter,sans-serif; color:#999; font-weight:300;">Assistant IA</span></div>
+  <div style="background:#2A2A2A; border-radius:16px; padding:24px; width:100%; max-width:360px; display:flex; flex-direction:column; gap:12px;">
+    <p style="color:#ccc; font-size:13px; line-height:1.5;">Pour activer l'assistant, entrez votre clé Groq API :<br><span style="color:#C4956A;">groq.com/keys → Free → Copier</span></p>
+    <input id="keyInput" type="password" placeholder="gsk_xxxxxxxxxxxx" style="background:#1A1A1A; border:1.5px solid #444; border-radius:10px; padding:12px 14px; color:white; font-size:14px; font-family:Inter,sans-serif; outline:none; width:100%;">
+    <div id="keyError" style="color:#ff6b6b; font-size:12px; min-height:16px;"></div>
+    <button onclick="saveKey()" style="background:#C4956A; border:none; border-radius:10px; padding:13px; color:white; font-size:15px; font-family:Inter,sans-serif; cursor:pointer; font-weight:500;">Activer l'assistant →</button>
+  </div>
+</div>
+
+<!-- CHAT UI -->
+<div id="chatUI" style="display:none; width:100%; height:100dvh; flex-direction:column; align-items:center; justify-content:center;">
+<div class="chat-wrapper">
+
+  <div class="header">
+    <div class="avatar">✂️</div>
+    <div class="header-info">
+      <h1>Batista Coiffure</h1>
+      <div class="status">
+        <div class="status-dot"></div>
+        <span>Assistante disponible</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="day-divider">Aujourd'hui</div>
+  </div>
+
+  <div class="quick-replies" id="quickReplies"></div>
+
+  <div class="input-area">
+    <textarea class="input-box" id="inputBox" placeholder="Écrivez votre message..." rows="1"></textarea>
+    <button class="send-btn" onclick="sendMessage()">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
+  </div>
+
+  <div class="powered">Propulsé par IA • Batista Coiffure Genève</div>
+
+</div>
+</div>
+</div>
+
+<script>
+const SALON_INFO = `Tu es l'assistante virtuelle de Batista Coiffure, un salon de coiffure élégant à Genève dédié aux femmes, situé au 5 rue du Prieuré, 1202 Genève.
+
+Propriétaire: Tania
+Téléphone: +41 79 413 69 13
+
+HORAIRES:
+- Lundi au vendredi: 9h00 - 19h00
+- Samedi: 9h00 - 17h00
+- Dimanche: Fermé
+
+SERVICES ET PRIX:
+- Coupe + Brushing: 65 CHF
+- Brushing seul: 40 CHF
+- Coupe + Séchage naturel: 55 CHF
+- Coloration (racines): 80 CHF
+- Balayage / Mèches: 120-180 CHF
+- Lissage kératine: 180-250 CHF
+- Abonnement brushing (4x/mois): 140 CHF
+
+RÉSERVATION:
+Pour réserver, les clientes peuvent appeler le +41 79 413 69 13 ou envoyer un message WhatsApp.
+
+STYLE ET AMBIANCE:
+Salon moderne et raffiné, conçu spécialement pour les femmes. Tania est reconnue pour son savoir-faire en coloration et son écoute attentive. Réductions étudiants et AVS: -15% sur présentation de justificatif.
+
+INSTRUCTIONS:
+- Réponds TOUJOURS en français
+- Sois chaleureuse, professionnelle et concise
+- Si quelqu'un veut réserver, donne le numéro WhatsApp et encourage à prendre RDV
+- Ne réponds jamais à des sujets hors du salon
+- Maximum 3-4 phrases par réponse
+- Utilise des emojis avec modération (1-2 max par message)`;
+
+let history = [];
+let isTyping = false;
+
+const QUICK_REPLIES_INIT = [
+  "📅 Prendre RDV",
+  "💰 Voir les tarifs", 
+  "⏰ Horaires",
+  "📍 Où êtes-vous ?"
+];
+
+function getTime() {
+  return new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+
+function addMessage(text, role) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="bubble">${text.replace(/\n/g, '<br>')}</div>
+    <div class="msg-time">${getTime()}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.id = 'typingIndicator';
+  div.className = 'msg bot';
+  div.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typingIndicator');
+  if (t) t.remove();
+}
+
+function setQuickReplies(replies) {
+  const qr = document.getElementById('quickReplies');
+  qr.innerHTML = '';
+  replies.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'qr-btn';
+    btn.textContent = r;
+    btn.onclick = () => {
+      sendMessage(r);
+    };
+    qr.appendChild(btn);
+  });
+}
+
+let GROQ_KEY = localStorage.getItem('groq_key') || '';
+
+function showKeyScreen() {
+  document.getElementById('keyScreen').style.display = 'flex';
+  document.getElementById('chatUI').style.display = 'none';
+}
+
+function hideKeyScreen() {
+  document.getElementById('keyScreen').style.display = 'none';
+  document.getElementById('chatUI').style.display = 'flex';
+}
+
+function saveKey() {
+  const k = document.getElementById('keyInput').value.trim();
+  if (!k.startsWith('gsk_')) {
+    document.getElementById('keyError').textContent = '❌ Clé invalide — doit commencer par gsk_';
+    return;
+  }
+  GROQ_KEY = k;
+  localStorage.setItem('groq_key', k);
+  hideKeyScreen();
+  startChat();
+}
+
+function startChat() {
+  setTimeout(() => {
+    showTyping();
+    setTimeout(() => {
+      removeTyping();
+      addMessage("Bonjour ! 👋 Je suis l'assistante de Batista Coiffure.\n\nComment puis-je vous aider aujourd'hui ?", 'bot');
+      setQuickReplies(QUICK_REPLIES_INIT);
+    }, 1200);
+  }, 300);
+}
+
+async function sendMessage(text) {
+  if (isTyping) return;
+  
+  const inputBox = document.getElementById('inputBox');
+  const msg = text || inputBox.value.trim();
+  if (!msg) return;
+
+  inputBox.value = '';
+  inputBox.style.height = 'auto';
+  document.getElementById('quickReplies').innerHTML = '';
+
+  addMessage(msg, 'user');
+  history.push({ role: 'user', content: msg });
+
+  isTyping = true;
+  showTyping();
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 300,
+        messages: [
+          { role: 'system', content: SALON_INFO },
+          ...history
+        ]
+      })
+    });
+
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content || "Désolée, je n'ai pas compris. Pouvez-vous reformuler ?";
+
+    removeTyping();
+    addMessage(reply, 'bot');
+    history.push({ role: 'assistant', content: reply });
+
+    const lower = msg.toLowerCase();
+    if (lower.includes('rdv') || lower.includes('réserv') || lower.includes('rendez')) {
+      setQuickReplies(['📞 Appeler maintenant', '💬 WhatsApp', '⬅️ Retour']);
+    } else if (lower.includes('tarif') || lower.includes('prix') || lower.includes('coût')) {
+      setQuickReplies(['✂️ Coupe', '🎨 Coloration', '💆 Abonnement brushing', '📅 Réserver']);
+    } else {
+      setQuickReplies(['📅 Prendre RDV', '💰 Tarifs', '❓ Autre question']);
+    }
+
+  } catch(e) {
+    removeTyping();
+    addMessage("Je rencontre un petit problème technique. Appelez-nous au +41 79 413 69 13 💛", 'bot');
+  }
+
+  isTyping = false;
+}
+
+// Auto-resize textarea
+document.getElementById('inputBox').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+
+document.getElementById('inputBox').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// Init
+window.addEventListener('load', () => {
+  if (!GROQ_KEY) {
+    showKeyScreen();
+  } else {
+    hideKeyScreen();
+    startChat();
+  }
+});
+</script>
+</body>
+</html>
