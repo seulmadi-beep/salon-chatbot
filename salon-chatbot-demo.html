@@ -357,6 +357,11 @@ INSTRUCTIONS:
 - Maximum 3-4 phrases par réponse
 - Utilise des emojis avec modération (1-2 max par message)`;
 
+const SALON_PHONE = '+41794136913';
+// Groq retires models over time; the first one that answers is kept.
+const GROQ_MODELS = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile'];
+let modelIndex = 0;
+
 let history = [];
 let isTyping = false;
 
@@ -375,10 +380,14 @@ function addMessage(text, role) {
   const msgs = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = `msg ${role}`;
-  div.innerHTML = `
-    <div class="bubble">${text.replace(/\n/g, '<br>')}</div>
-    <div class="msg-time">${getTime()}</div>
-  `;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.style.whiteSpace = 'pre-wrap';
+  bubble.textContent = text;  // text only: never run HTML typed by a visitor or returned by the AI
+  const time = document.createElement('div');
+  time.className = 'msg-time';
+  time.textContent = getTime();
+  div.append(bubble, time);
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -406,6 +415,9 @@ function setQuickReplies(replies) {
     btn.className = 'qr-btn';
     btn.textContent = r;
     btn.onclick = () => {
+      if (r.includes('Appeler')) { window.location.href = 'tel:' + SALON_PHONE; return; }
+      if (r.includes('WhatsApp')) { window.open('https://wa.me/' + SALON_PHONE.replace(/\D/g, ''), '_blank', 'noopener'); return; }
+      if (r.includes('Retour')) { setQuickReplies(QUICK_REPLIES_INIT); return; }
       sendMessage(r);
     };
     qr.appendChild(btn);
@@ -465,24 +477,43 @@ async function sendMessage(text) {
   showTyping();
 
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 300,
-        messages: [
-          { role: 'system', content: SALON_INFO },
-          ...history
-        ]
-      })
-    });
-
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || "Désolée, je n'ai pas compris. Pouvez-vous reformuler ?";
+    let reply = '';
+    while (modelIndex < GROQ_MODELS.length && !reply) {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_KEY}`
+        },
+        body: JSON.stringify({
+          model: GROQ_MODELS[modelIndex],
+          max_tokens: 1500,  // reasoning models think before answering
+          messages: [
+            { role: 'system', content: SALON_INFO },
+            ...history.slice(-12)
+          ]
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        localStorage.removeItem('groq_key');
+        GROQ_KEY = '';
+        removeTyping();
+        isTyping = false;
+        history.pop();
+        document.getElementById('keyError').textContent = '❌ Clé refusée par Groq — vérifiez-la';
+        showKeyScreen();
+        return;
+      }
+      if (!res.ok) {
+        if (res.status === 429) throw new Error('rate limit');
+        modelIndex++;  // model removed or unavailable: try the next one
+        continue;
+      }
+      reply = (data.choices?.[0]?.message?.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      if (!reply) reply = "Désolée, je n'ai pas compris. Pouvez-vous reformuler ?";
+    }
+    if (!reply) throw new Error('no model available');
 
     removeTyping();
     addMessage(reply, 'bot');
@@ -499,7 +530,9 @@ async function sendMessage(text) {
 
   } catch(e) {
     removeTyping();
+    history.pop();
     addMessage("Je rencontre un petit problème technique. Appelez-nous au +41 79 413 69 13 💛", 'bot');
+    setQuickReplies(['📞 Appeler maintenant', '💬 WhatsApp']);
   }
 
   isTyping = false;
